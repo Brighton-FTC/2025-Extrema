@@ -16,6 +16,8 @@ public class LinearSlideComponent {
     public static double UP_POSITION = 4000;
     public static double DOWN_POSITION = 0;
 
+    private boolean slideActivated = false;
+
     public LinearSlideComponent(HardwareMap hardwareMap, String motorId){
         slideMotor = new Motor(hardwareMap, motorId);
         slideMotor.resetEncoder();
@@ -34,10 +36,23 @@ public class LinearSlideComponent {
 
     public void up() {
         controller.setSetPoint(UP_POSITION);
+        slideActivated = true;
+
     }
 
     public void down() {
         controller.setSetPoint(DOWN_POSITION);
+        slideActivated = false;
+
+    }
+
+    public void toggle(){
+        if(!slideActivated){
+            up();
+        }
+        if (slideActivated){
+            down();
+        }
     }
 
     public boolean atSetPoint() {
