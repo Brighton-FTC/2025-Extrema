@@ -13,7 +13,7 @@ public class LinearSlideComponent {
     private PIDController controller = new PIDController(0, 0, 0);
     public static double kP = 0.003, kI = 0, kD = 0;
 
-    public static double UP_POSITION = 8000;
+    public static double UP_POSITION = 9000;
     public static double DOWN_POSITION = 0;
 
     public LinearSlideComponent(HardwareMap hardwareMap, String motorId){

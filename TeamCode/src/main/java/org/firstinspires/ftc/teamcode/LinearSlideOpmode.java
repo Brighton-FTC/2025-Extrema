@@ -37,7 +37,7 @@ public class LinearSlideOpmode extends OpMode {
             isRunningPid = true;
 
         } else if (gamepad.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER)
-                - gamepad.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0) {
+                - gamepad.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) != 0) {
             isRunningPid = false;
         }
 
