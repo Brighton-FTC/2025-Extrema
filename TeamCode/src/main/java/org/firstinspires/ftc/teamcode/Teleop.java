@@ -58,7 +58,7 @@ public class Teleop extends OpMode {
 
         imu.resetYaw();
 
-        grabber = new GrabberComponent(hardwareMap, "left_claw_servo", "right_claw_servo");
+        grabber = new GrabberComponent(hardwareMap, "left_claw_servo", "right_claw_servo", "grabber_rotator_motor");
 
         slide = new LinearSlideComponent(hardwareMap, "linear_slide_motor");
     }
@@ -70,16 +70,12 @@ public class Teleop extends OpMode {
 
         // grabber
         if (gamepad.wasJustPressed(PSButtons.SQUARE)){
+            slide.toggle();
             grabber.toggle();
-        }
 
+
+        }
         // linear slide
-        if (gamepad.wasJustPressed(GamepadKeys.Button.DPAD_UP)) {
-            slide.up();
-        } else if (gamepad.wasJustPressed(GamepadKeys.Button.DPAD_DOWN)) {
-            slide.down();
-        }
-
         slide.run();
 
         // drivetrain
