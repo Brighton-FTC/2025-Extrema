@@ -18,6 +18,8 @@ public class LinearSlideOpmode extends OpMode {
     private GamepadEx gamepad;
     private LinearSlideComponent linearSlide;
 
+    private boolean isRunningPid = true;
+
     @Override
     public void init() {
         linearSlide = new LinearSlideComponent(hardwareMap, "linear_slide_motor");
@@ -31,11 +33,22 @@ public class LinearSlideOpmode extends OpMode {
 
         if (gamepad.wasJustPressed(GamepadKeys.Button.DPAD_UP)) {
             linearSlide.up();
+            isRunningPid = true;
         } else if (gamepad.wasJustPressed(GamepadKeys.Button.DPAD_DOWN)) {
             linearSlide.down();
+            isRunningPid = true;
+
+        } else if (gamepad.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER)
+                - gamepad.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) != 0) {
+            isRunningPid = false;
         }
 
-        linearSlide.run();
+        if (isRunningPid) {
+            linearSlide.run();
+        } else {
+            linearSlide.getMotor().set(gamepad.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER)
+                    - gamepad.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER));
+        }
 
         telemetry.addData("Position", linearSlide.getMotor().getCurrentPosition());
         telemetry.addData("Set point", linearSlide.getSetPoint());
