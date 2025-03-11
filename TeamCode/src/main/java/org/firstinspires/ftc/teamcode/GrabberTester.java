@@ -15,7 +15,7 @@ public class GrabberTester extends OpMode {
 
     @Override
     public void init() {
-        grabber = new GrabberComponent(hardwareMap, "left_claw_servo", "right_claw_servo");
+        grabber = new GrabberComponent(hardwareMap, "left_claw_servo", "right_claw_servo", "rotator_servo");
         gamepad = new GamepadEx(gamepad1);
     }
 
@@ -24,9 +24,14 @@ public class GrabberTester extends OpMode {
         gamepad.readButtons();
 
         if (gamepad.wasJustPressed(PSButtons.SQUARE)) {
-            grabber.toggle();
+            grabber.toggleClaw();
+        }
+
+        if (gamepad.wasJustPressed(PSButtons.CIRCLE)) {
+            grabber.toggleRotator();
         }
 
         telemetry.addData("Grabber Status", grabber.isClosed() ? "Closed" : "Opened");
+        telemetry.addData("Rotator Status", grabber.isDown() ? "Down" : "Forwards");
     }
 }

@@ -1,20 +1,25 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.arcrobotics.ftclib.hardware.ServoEx;
 import com.arcrobotics.ftclib.hardware.SimpleServo;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 
+@Config
 public class GrabberComponent {
-    public static final double TURN_AMOUNT = 0.5;
+    public static double CLAW_TURN_AMOUNT = 0.5;
+    public static double ROTATOR_TURN_AMOUNT = 1;
 
-    private final ServoEx leftClaw;
-    private final ServoEx rightClaw;
+    private final ServoEx leftClaw, rightClaw, rotator;
 
 
-    public GrabberComponent(HardwareMap hardwareMap, String leftId, String rightId) {
+    public GrabberComponent(HardwareMap hardwareMap, String leftId, String rightId, String rotatorId) {
         leftClaw = new SimpleServo(hardwareMap, leftId, 0, 360);
         rightClaw = new SimpleServo(hardwareMap, rightId, 0, 360);
+
+        rotator = new SimpleServo(hardwareMap, rotatorId, 0, 360);
+        rotator.setInverted(true);
 
         leftClaw.setInverted(true);
     }
@@ -26,12 +31,12 @@ public class GrabberComponent {
     }
 
     public void reset() {
-        leftClaw.setPosition(TURN_AMOUNT);
-        rightClaw.setPosition(TURN_AMOUNT);
+        leftClaw.setPosition(CLAW_TURN_AMOUNT);
+        rightClaw.setPosition(CLAW_TURN_AMOUNT);
 
     }
 
-    public void toggle() {
+    public void toggleClaw() {
         if (leftClaw.getPosition() == 0) {
             reset();
         } else {
@@ -39,7 +44,27 @@ public class GrabberComponent {
         }
     }
 
+    public void down() {
+        rotator.setPosition(0);
+    }
+
+    public void forward() {
+        rotator.setPosition(ROTATOR_TURN_AMOUNT);
+    }
+
+    public void toggleRotator() {
+        if (rotator.getPosition() == 0) {
+            forward();
+        } else {
+            down();
+        }
+    }
+
     public boolean isClosed() {
         return leftClaw.getPosition() == 0;
+    }
+
+    public boolean isDown() {
+        return rotator.getPosition() == 0;
     }
 }
