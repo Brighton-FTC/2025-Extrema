@@ -8,7 +8,9 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 @Config
 public class GrabberComponent {
-    public static double CLAW_TURN_AMOUNT = 0.5;
+    public static double LEFT_CLAW_TURN_AMOUNT = 1;
+    public static double RIGHT_CLAW_TURN_AMOUNT = 0.4;
+
     public static double ROTATOR_TURN_AMOUNT = 1;
 
     private final ServoEx leftClaw, rightClaw, rotator;
@@ -31,8 +33,8 @@ public class GrabberComponent {
     }
 
     public void reset() {
-        leftClaw.setPosition(CLAW_TURN_AMOUNT);
-        rightClaw.setPosition(CLAW_TURN_AMOUNT);
+        leftClaw.setPosition(LEFT_CLAW_TURN_AMOUNT);
+        rightClaw.setPosition(RIGHT_CLAW_TURN_AMOUNT);
 
     }
 

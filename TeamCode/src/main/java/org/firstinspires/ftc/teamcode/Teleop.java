@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.arcrobotics.ftclib.controller.PController;
 import com.arcrobotics.ftclib.drivebase.MecanumDrive;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
@@ -12,9 +13,11 @@ import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.teamcode.util.inputs.PSButtons;
 
+@Config
 @TeleOp(name = "Teleop (use this one)", group = "competition")
 public class Teleop extends OpMode {
     public static final double TURN_THRESHOLD = 0.1;
+    public static double SLOW_MODE_SPEED = 0.4;
 
     private MecanumDrive drive;
     private GamepadEx gamepad1Ex, gamepad2Ex;
@@ -26,7 +29,11 @@ public class Teleop extends OpMode {
 
     private boolean isFieldCentric = true;
 
+    private boolean isRunningPid = true;
+    private double inputMultiplier = 1;
+
     private PController headingController = new PController(-0.025);
+    public static double kP = -0.025;
 
     @Override
     public void init() {
@@ -46,6 +53,9 @@ public class Teleop extends OpMode {
         motors[2].setInverted(true);
         motors[3].setInverted(true);
 
+//        motors[0].setRunMode(Motor.RunMode.VelocityControl);
+//        motors[1].setRunMode(Motor.RunMode.VelocityControl);
+
         drive = new MecanumDrive(motors[0], motors[1], motors[2], motors[3]);
 
         imu = hardwareMap.get(IMU.class, "imu");
@@ -58,29 +68,45 @@ public class Teleop extends OpMode {
 
         imu.resetYaw();
 
-        grabber = new GrabberComponent(hardwareMap, "left_claw_servo", "right_claw_servo");
+        grabber = new GrabberComponent(hardwareMap, "left_claw_servo", "right_claw_servo", "rotator_servo");
 
         slide = new LinearSlideComponent(hardwareMap, "linear_slide_motor");
     }
 
     @Override
     public void loop() {
+        headingController.setP(kP);
+
         gamepad1Ex.readButtons();
         gamepad2Ex.readButtons();
 
         // grabber
         if (gamepad.wasJustPressed(PSButtons.SQUARE)){
-            grabber.toggle();
+            grabber.toggleClaw();
+        }
+        if (gamepad.wasJustPressed(PSButtons.CIRCLE)){
+            grabber.toggleRotator();
         }
 
         // linear slide
         if (gamepad.wasJustPressed(GamepadKeys.Button.DPAD_UP)) {
             slide.up();
+            isRunningPid = true;
         } else if (gamepad.wasJustPressed(GamepadKeys.Button.DPAD_DOWN)) {
             slide.down();
+            isRunningPid = true;
+
+        } else if (gamepad.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER)
+                - gamepad.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) != 0) {
+            isRunningPid = false;
         }
 
-        slide.run();
+        if (isRunningPid) {
+            slide.run();
+        } else {
+            slide.getMotor().set(gamepad.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER)
+                    - gamepad.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER));
+        }
 
         // drivetrain
         double yaw = imu.getRobotYawPitchRollAngles().getYaw();
@@ -89,18 +115,34 @@ public class Teleop extends OpMode {
             isFieldCentric = !isFieldCentric;
         }
 
+        if (gamepad.wasJustPressed(PSButtons.CROSS)) {
+            inputMultiplier = inputMultiplier == 1 ? SLOW_MODE_SPEED : 1;
+        }
+
         if (Math.abs(gamepad.getRightX()) > TURN_THRESHOLD) {
             if (isFieldCentric) {
-                drive.driveFieldCentric(gamepad.getLeftX(), gamepad.getLeftY(), gamepad.getRightX(), yaw, true);
+                drive.driveFieldCentric(gamepad.getLeftX() * inputMultiplier,
+                        gamepad.getLeftY() * inputMultiplier,
+                        gamepad.getRightX() * inputMultiplier,
+                        yaw, true);
             } else {
-                drive.driveRobotCentric(gamepad.getLeftX(), gamepad.getLeftY(), gamepad.getRightX(), true);
+                drive.driveRobotCentric(gamepad.getLeftX() * inputMultiplier,
+                        gamepad.getLeftY() * inputMultiplier,
+                        gamepad.getRightX() * inputMultiplier,
+                        true);
             }
             headingController.setSetPoint(yaw);
         } else {
             if (isFieldCentric) {
-                drive.driveFieldCentric(gamepad.getLeftX(), gamepad.getLeftY(), headingController.calculate(yaw), yaw, true);
+                drive.driveFieldCentric(gamepad.getLeftX() * inputMultiplier,
+                        gamepad.getLeftY() * inputMultiplier,
+                        headingController.calculate(yaw),
+                        yaw, true);
             } else {
-                drive.driveRobotCentric(gamepad.getLeftX(), gamepad.getLeftY(), headingController.calculate(yaw), true);
+                drive.driveRobotCentric(gamepad.getLeftX() * inputMultiplier,
+                        gamepad.getLeftY() * inputMultiplier,
+                        headingController.calculate(yaw),
+                        true);
             }
         }
 
@@ -114,6 +156,9 @@ public class Teleop extends OpMode {
 
         telemetry.addLine(isFieldCentric ? "Driving Field Centric" : "Driving Robot Centric");
         telemetry.addData("Heading", yaw);
+        if (inputMultiplier == SLOW_MODE_SPEED) {
+            telemetry.addLine("Slow Mode Activated");
+        }
         telemetry.addLine();
 
         telemetry.addData("Slide Position", slide.getMotor().getCurrentPosition());
@@ -122,6 +167,7 @@ public class Teleop extends OpMode {
         telemetry.addLine();
 
         telemetry.addData("Grabber Status", grabber.isClosed() ? "Closed" : "Opened");
+        telemetry.addData("Grabber Rotator Status", grabber.isDown() ? "Down" : "Forwards");
         telemetry.addLine();
     }
 }
