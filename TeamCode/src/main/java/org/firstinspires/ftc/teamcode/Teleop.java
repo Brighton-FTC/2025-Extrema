@@ -1,7 +1,9 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
-import com.arcrobotics.ftclib.controller.PController;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.arcrobotics.ftclib.controller.PIDController;
 import com.arcrobotics.ftclib.drivebase.MecanumDrive;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
@@ -17,7 +19,7 @@ import org.firstinspires.ftc.teamcode.util.inputs.PSButtons;
 @TeleOp(name = "Teleop (use this one)", group = "competition")
 public class Teleop extends OpMode {
     public static final double TURN_THRESHOLD = 0.1;
-    public static double SLOW_MODE_SPEED = 0.4;
+    public static double SLOW_MODE_SPEED = 0.6;
 
     private MecanumDrive drive;
     private GamepadEx gamepad1Ex, gamepad2Ex;
@@ -32,11 +34,13 @@ public class Teleop extends OpMode {
     private boolean isRunningPid = true;
     private double inputMultiplier = 1;
 
-    private PController headingController = new PController(-0.025);
-    public static double kP = -0.025;
+    public static double kP = -0.035, kI = 0, kD = 0;
+    private final PIDController headingController = new PIDController(kP, kI, kD);
 
     @Override
     public void init() {
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+
         gamepad1Ex = new GamepadEx(gamepad1);
         gamepad2Ex = new GamepadEx(gamepad2);
 
@@ -119,7 +123,7 @@ public class Teleop extends OpMode {
             inputMultiplier = inputMultiplier == 1 ? SLOW_MODE_SPEED : 1;
         }
 
-        if (Math.abs(gamepad.getRightX()) > TURN_THRESHOLD) {
+        if (Math.abs(gamepad.getRightX()) > TURN_THRESHOLD && !gamepad.isDown(GamepadKeys.Button.RIGHT_STICK_BUTTON)) {
             if (isFieldCentric) {
                 drive.driveFieldCentric(gamepad.getLeftX() * inputMultiplier,
                         gamepad.getLeftY() * inputMultiplier,
@@ -131,17 +135,19 @@ public class Teleop extends OpMode {
                         gamepad.getRightX() * inputMultiplier,
                         true);
             }
+
             headingController.setSetPoint(yaw);
+
         } else {
             if (isFieldCentric) {
                 drive.driveFieldCentric(gamepad.getLeftX() * inputMultiplier,
                         gamepad.getLeftY() * inputMultiplier,
-                        headingController.calculate(yaw),
+                        headingController.calculate(correctYaw(yaw, headingController.getSetPoint())),
                         yaw, true);
             } else {
                 drive.driveRobotCentric(gamepad.getLeftX() * inputMultiplier,
                         gamepad.getLeftY() * inputMultiplier,
-                        headingController.calculate(yaw),
+                        headingController.calculate(correctYaw(yaw, headingController.getSetPoint())),
                         true);
             }
         }
@@ -155,10 +161,11 @@ public class Teleop extends OpMode {
         telemetry.addLine();
 
         telemetry.addLine(isFieldCentric ? "Driving Field Centric" : "Driving Robot Centric");
-        telemetry.addData("Heading", yaw);
         if (inputMultiplier == SLOW_MODE_SPEED) {
             telemetry.addLine("Slow Mode Activated");
         }
+        telemetry.addData("Heading", yaw);
+        telemetry.addData("Target Heading", headingController.getSetPoint());
         telemetry.addLine();
 
         telemetry.addData("Slide Position", slide.getMotor().getCurrentPosition());
@@ -169,5 +176,18 @@ public class Teleop extends OpMode {
         telemetry.addData("Grabber Status", grabber.isClosed() ? "Closed" : "Opened");
         telemetry.addData("Grabber Rotator Status", grabber.isDown() ? "Down" : "Forwards");
         telemetry.addLine();
+    }
+
+    // wraps yaw, in degrees
+    private double correctYaw(double yaw, double expectedYaw) {
+        while (expectedYaw - yaw > 180) {
+            yaw += 360;
+        }
+
+        while (expectedYaw - yaw < -180) {
+            yaw -= 360;
+        }
+
+        return yaw;
     }
 }
